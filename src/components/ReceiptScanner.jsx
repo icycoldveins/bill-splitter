@@ -157,17 +157,22 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
       {hasScannedReceipt ? (
         <Box w="100%" p={4} bg="green.50" borderRadius="md">
           <VStack spacing={3}>
-            <Text color="green.600">Receipt scanned successfully!</Text>
+            <Text color="green.600">
+              <CheckIcon mr={2} />
+              Receipt scanned successfully!
+            </Text>
             <HStack spacing={4}>
               <Button
                 colorScheme="blue"
                 onClick={() => onScanComplete(existingItems)}
+                rightIcon={<ArrowForwardIcon />}
               >
                 Continue with Receipt
               </Button>
               <Button
                 variant="outline"
                 onClick={resetState}
+                leftIcon={<RepeatIcon />}
               >
                 Scan Different Receipt
               </Button>
@@ -197,9 +202,10 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
             >
               <input {...getInputProps()} />
               <VStack spacing={3}>
-                <Box fontSize="2xl" color="blue.500" mb={2}>
-                  ��
-                </Box>
+                <AttachmentIcon 
+                  boxSize={8} 
+                  color="blue.500"
+                />
                 <Text fontWeight="medium" color="blue.600">
                   Drop your receipt here
                 </Text>
@@ -219,6 +225,7 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
                   isLoading={isScanning}
                   loadingText="Scanning..."
                   colorScheme="blue"
+                  leftIcon={<CheckIcon />}
                 >
                   Scan Receipt
                 </Button>
@@ -227,6 +234,7 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
                     setImage(null);
                   }}
                   variant="outline"
+                  leftIcon={<RepeatIcon />}
                 >
                   Choose Different Image
                 </Button>
