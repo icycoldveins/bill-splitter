@@ -1,28 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createWorker } from 'tesseract.js';
 import { Box, Button, Image, VStack, useToast, HStack, Text } from '@chakra-ui/react';
 import { useDropzone } from 'react-dropzone';
-import Webcam from 'react-webcam';
+import { 
+  AttachmentIcon, 
+  RepeatIcon, 
+  CheckIcon, 
+  ArrowForwardIcon 
+} from '@chakra-ui/icons';
 
-function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems }) {
+function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onReset }) {
   const [image, setImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const webcamRef = useRef(null);
   const toast = useToast();
 
-  // If we already have scanned items, show them
-  useEffect(() => {
-    if (hasScannedReceipt && existingItems) {
-      // Show the scanned receipt data
-      toast({
-        title: "Receipt already scanned",
-        description: "You can scan again or proceed with existing data",
-        status: "info",
-        duration: 3000,
-      });
-    }
-  }, [hasScannedReceipt, existingItems]);
+  const resetState = () => {
+    setImage(null);
+    setIsScanning(false);
+    onReset();
+  };
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -31,15 +27,8 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems }) {
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0];
       setImage(URL.createObjectURL(file));
-      setShowCamera(false);
     }
   });
-
-  const captureImage = () => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    setImage(imageSrc);
-    setShowCamera(false);
-  };
 
   const findAmountInLine = (line) => {
     // Look for dollar amounts with optional dollar sign
@@ -178,110 +167,89 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems }) {
       {hasScannedReceipt ? (
         <Box w="100%" p={4} bg="green.50" borderRadius="md">
           <VStack spacing={3}>
-            <Text color="green.600">Receipt already scanned!</Text>
+            <Text color="green.600">
+              <CheckIcon mr={2} />
+              Receipt scanned successfully!
+            </Text>
             <HStack spacing={4}>
               <Button
                 colorScheme="blue"
                 onClick={() => onScanComplete(existingItems)}
+                rightIcon={<ArrowForwardIcon />}
               >
-                Continue with Existing Receipt
+                Continue with Receipt
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowCamera(prev => !prev)}
+                onClick={resetState}
+                leftIcon={<RepeatIcon />}
               >
-                Scan New Receipt
+                Scan Different Receipt
               </Button>
             </HStack>
           </VStack>
         </Box>
       ) : (
         <VStack spacing={4} w="100%">
-          <HStack spacing={4} justifyContent="center" w="100%">
-            <Button
-              onClick={() => setShowCamera(prev => !prev)}
-              colorScheme={showCamera ? 'red' : 'blue'}
+          {!image && (
+            <Box 
+              {...getRootProps()} 
+              p={8}
+              border="3px dashed"
+              borderColor="blue.200"
+              borderRadius="xl"
+              bg="blue.50"
+              w={{ base: "100%", md: "400px" }}
+              mx="auto"
+              textAlign="center"
+              transition="all 0.2s"
+              cursor="pointer"
+              _hover={{
+                borderColor: "blue.400",
+                bg: "blue.100",
+                transform: "scale(1.02)"
+              }}
             >
-              {showCamera ? 'Close Camera' : 'Open Camera'}
-            </Button>
-            <Button
-              onClick={() => setImage(null)}
-              isDisabled={!image}
-            >
-              Clear Image
-            </Button>
-          </HStack>
-
-          {showCamera ? (
-            <Box w="100%" position="relative">
-              <Webcam
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                width="100%"
-              />
-              <Button
-                position="absolute"
-                bottom="4"
-                left="50%"
-                transform="translateX(-50%)"
-                onClick={captureImage}
-                colorScheme="green"
-              >
-                Capture Receipt
-              </Button>
+              <input {...getInputProps()} />
+              <VStack spacing={3}>
+                <AttachmentIcon 
+                  boxSize={8} 
+                  color="blue.500"
+                />
+                <Text fontWeight="medium" color="blue.600">
+                  Drop your receipt here
+                </Text>
+                <Text fontSize="sm" color="blue.400">
+                  or click to select an image
+                </Text>
+              </VStack>
             </Box>
-          ) : (
-            !hasScannedReceipt && (
-              <Box 
-                {...getRootProps()} 
-                p={8}
-                border="3px dashed"
-                borderColor="blue.200"
-                borderRadius="xl"
-                bg="blue.50"
-                w={{ base: "100%", md: "400px" }}
-                mx="auto"
-                textAlign="center"
-                transition="all 0.2s"
-                cursor="pointer"
-                _hover={{
-                  borderColor: "blue.400",
-                  bg: "blue.100",
-                  transform: "scale(1.02)"
-                }}
-              >
-                <input {...getInputProps()} />
-                <VStack spacing={3}>
-                  <Box
-                    fontSize="2xl"
-                    color="blue.500"
-                    mb={2}
-                  >
-                    📷
-                  </Box>
-                  <Text fontWeight="medium" color="blue.600">
-                    Drop your receipt here
-                  </Text>
-                  <Text fontSize="sm" color="blue.400">
-                    or click to select an image
-                  </Text>
-                </VStack>
-              </Box>
-            )
           )}
 
-          {image && !showCamera && (
-            <>
+          {image && (
+            <VStack spacing={4} w="100%">
               <Image src={image} maxH="300px" />
-              <Button
-                onClick={scanReceipt}
-                isLoading={isScanning}
-                loadingText="Scanning..."
-                colorScheme="blue"
-              >
-                Scan Receipt
-              </Button>
-            </>
+              <HStack spacing={4}>
+                <Button
+                  onClick={scanReceipt}
+                  isLoading={isScanning}
+                  loadingText="Scanning..."
+                  colorScheme="blue"
+                  leftIcon={<CheckIcon />}
+                >
+                  Scan Receipt
+                </Button>
+                <Button
+                  onClick={() => {
+                    setImage(null);
+                  }}
+                  variant="outline"
+                  leftIcon={<RepeatIcon />}
+                >
+                  Choose Different Image
+                </Button>
+              </HStack>
+            </VStack>
           )}
         </VStack>
       )}

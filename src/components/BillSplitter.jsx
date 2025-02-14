@@ -7,7 +7,8 @@ import {
   HStack,
   Box,
   Container,
-  useColorModeValue
+  useColorModeValue,
+  useToast
 } from '@chakra-ui/react';
 import ReceiptScanner from './ReceiptScanner';
 import ItemSelector from './ItemSelector';
@@ -26,6 +27,8 @@ function BillSplitter() {
   const boxBg = useColorModeValue('white', 'gray.600');
   const borderColor = useColorModeValue('gray.200', 'gray.500');
 
+  const toast = useToast();
+
   const addPerson = () => {
     setPeople([...people, '']);
   };
@@ -43,6 +46,21 @@ function BillSplitter() {
   };
 
   const handleScanComplete = (scannedItems) => {
+    // Check if at least one person has a name
+    const hasValidPerson = people.some(person => person.trim() !== '');
+    
+    if (!hasValidPerson) {
+      toast({
+        title: "Add at least one person",
+        description: "Please enter a name before continuing",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Filter out empty names before proceeding
+    setPeople(people.filter(person => person.trim() !== ''));
     setItems(scannedItems);
     setHasScannedReceipt(true);
     setStep(2);
@@ -59,6 +77,14 @@ function BillSplitter() {
 
   const goBack = () => {
     setStep(prev => prev - 1);
+  };
+
+  const resetReceiptState = () => {
+    setHasScannedReceipt(false);
+    setItems([]);
+    setSelectedItems([]);
+    setSplits([]);
+    // Don't reset people when scanning new receipt
   };
 
   return (
@@ -141,6 +167,7 @@ function BillSplitter() {
                 people={people}
                 hasScannedReceipt={hasScannedReceipt}
                 existingItems={items}
+                onReset={resetReceiptState}
               />
             </VStack>
           )}

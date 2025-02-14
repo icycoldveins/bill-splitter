@@ -17,7 +17,9 @@ import {
   RadioGroup,
   Stack,
   Select,
+  useToast,
 } from '@chakra-ui/react';
+import { ArrowForwardIcon } from '@chakra-ui/icons';
 
 function ItemSelector({ items, onItemsSelected, people }) {
   const [itemAssignments, setItemAssignments] = useState({});
@@ -26,6 +28,7 @@ function ItemSelector({ items, onItemsSelected, people }) {
   const [tax, setTax] = useState(items.tax || 0);
   const [tip, setTip] = useState(items.tip || 0);
   const [paidBy, setPaidBy] = useState('');
+  const toast = useToast();
   
   const subtotal = items.items.reduce((sum, item) => sum + item.price, 0);
   
@@ -80,27 +83,40 @@ function ItemSelector({ items, onItemsSelected, people }) {
   };
 
   const handleSubmit = () => {
-    // Group items by person
-    const itemsByPerson = {};
-    items.items.forEach((item, index) => {
-      const assignedTo = itemAssignments[index] || paidBy;
-      if (!itemsByPerson[assignedTo]) {
-        itemsByPerson[assignedTo] = [];
-      }
-      itemsByPerson[assignedTo].push(item);
-    });
+    // Check if all items are assigned
+    const unassignedItems = items.items.filter((_, index) => 
+      !itemAssignments.hasOwnProperty(index)
+    );
 
-    const selectedItemsWithTaxAndTip = {
+    // Check if payer is selected
+    if (!paidBy) {
+      toast({
+        title: "Select who paid",
+        description: "Please select who paid the bill",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Check if any items are unassigned
+    if (unassignedItems.length > 0) {
+      toast({
+        title: "Unassigned items",
+        description: `Please assign ${unassignedItems.length} remaining item${unassignedItems.length > 1 ? 's' : ''}`,
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    onItemsSelected({
       items: items.items,
-      itemAssignments: itemAssignments,
+      itemAssignments,
       tax: taxAmount,
       tip: tipAmount,
-      total: total,
-      paidBy: paidBy,
-      taxPercent: taxType === 'percentage' ? tax : (taxAmount / subtotal) * 100,
-      tipPercent: tipType === 'percentage' ? tip : (tipAmount / subtotal) * 100
-    };
-    onItemsSelected(selectedItemsWithTaxAndTip);
+      paidBy
+    });
   };
 
   return (
@@ -264,6 +280,7 @@ function ItemSelector({ items, onItemsSelected, people }) {
         onClick={handleSubmit}
         colorScheme="blue"
         isDisabled={!paidBy}
+        rightIcon={<ArrowForwardIcon />}
       >
         Continue
       </Button>
