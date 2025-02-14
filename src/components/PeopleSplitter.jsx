@@ -11,13 +11,27 @@ function PeopleSplitter({ items, people, onSplitComplete }) {
   const boxBg = useColorModeValue('white', 'gray.700');
   const highlightBg = useColorModeValue('blue.50', 'blue.900');
   
+  // Ensure items has the required properties
+  const safeItems = {
+    items: items?.items || [],
+    itemAssignments: items?.itemAssignments || {},
+    tax: items?.tax || 0,
+    tip: items?.tip || 0,
+    paidBy: items?.paidBy
+  };
+  
+  // Calculate totals
+  const subtotal = safeItems.items.reduce((sum, item) => sum + (item?.price || 0), 0);
+  const total = subtotal + safeItems.tax + safeItems.tip;
+  
   // Calculate payer's items and total
-  const payerItems = items.items.filter((_, itemIndex) => 
-    items.itemAssignments[itemIndex] === items.paidBy
+  const payerItems = safeItems.items.filter((_, itemIndex) => 
+    safeItems.itemAssignments[itemIndex] === safeItems.paidBy
   );
-  const payerSubtotal = payerItems.reduce((sum, item) => sum + item.price, 0);
-  const payerTaxShare = (items.tax / items.items.length) * payerItems.length;
-  const payerTipShare = (items.tip / items.items.length) * payerItems.length;
+  
+  const payerSubtotal = payerItems.reduce((sum, item) => sum + (item?.price || 0), 0);
+  const payerTaxShare = (safeItems.tax / safeItems.items.length) * payerItems.length;
+  const payerTipShare = (safeItems.tip / safeItems.items.length) * payerItems.length;
   const payerTotal = payerSubtotal + payerTaxShare + payerTipShare;
 
   return (
@@ -26,12 +40,12 @@ function PeopleSplitter({ items, people, onSplitComplete }) {
 
       <Box w="100%" p={6} bg={boxBg} borderRadius="xl" boxShadow="md">
         <Badge colorScheme="green" p={2} mb={4} borderRadius="md">
-          {people[parseInt(items.paidBy)]} paid ${items.total.toFixed(2)}
+          {people[parseInt(safeItems.paidBy)]} paid ${total.toFixed(2)}
         </Badge>
         
         {/* Show what the payer spent */}
         <Box p={3} bg={highlightBg} mb={3} borderRadius="md">
-          <Text fontWeight="bold">{people[parseInt(items.paidBy)]}'s Items:</Text>
+          <Text fontWeight="bold">{people[parseInt(safeItems.paidBy)]}'s Items:</Text>
           <VStack align="stretch" pl={4} spacing={1}>
             {payerItems.map((item, idx) => (
               <Text key={idx}>
@@ -49,15 +63,15 @@ function PeopleSplitter({ items, people, onSplitComplete }) {
         {/* Show what others owe */}
         <Text mb={2} fontWeight="bold">Others owe:</Text>
         {people.map((person, index) => {
-          if (index.toString() === items.paidBy) return null;
+          if (index.toString() === safeItems.paidBy) return null;
           
-          const personItems = items.items.filter((_, itemIndex) => 
-            items.itemAssignments[itemIndex] === index.toString()
+          const personItems = safeItems.items.filter((_, itemIndex) => 
+            safeItems.itemAssignments[itemIndex] === index.toString()
           );
           
-          const subtotal = personItems.reduce((sum, item) => sum + item.price, 0);
-          const taxShare = (items.tax / items.items.length) * personItems.length;
-          const tipShare = (items.tip / items.items.length) * personItems.length;
+          const subtotal = personItems.reduce((sum, item) => sum + (item?.price || 0), 0);
+          const taxShare = (safeItems.tax / safeItems.items.length) * personItems.length;
+          const tipShare = (safeItems.tip / safeItems.items.length) * personItems.length;
           const total = subtotal + taxShare + tipShare;
 
           return (
@@ -71,7 +85,7 @@ function PeopleSplitter({ items, people, onSplitComplete }) {
                 ))}
                 <Text>Tax: ${taxShare.toFixed(2)}</Text>
                 <Text>Tip: ${tipShare.toFixed(2)}</Text>
-                <Text fontWeight="bold">Total owed: ${total.toFixed(2)}</Text>
+                <Text fontWeight="bold">Owes: ${total.toFixed(2)}</Text>
               </VStack>
             </Box>
           );
