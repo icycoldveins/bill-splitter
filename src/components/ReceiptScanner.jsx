@@ -125,6 +125,18 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
         receiptData.subtotal = receiptData.items.reduce((sum, item) => sum + item.price, 0);
       }
 
+      // Check if we found any items or totals
+      if (receiptData.items.length === 0 && !receiptData.total && !receiptData.subtotal) {
+        toast({
+          title: "No items detected",
+          description: "Please try scanning the receipt again or make sure the image is clear and well-lit",
+          status: "warning",
+          duration: 5000,
+          isClosable: true
+        });
+        return;
+      }
+
       // Calculate percentages
       const taxPercent = receiptData.subtotal ? (receiptData.tax / receiptData.subtotal) * 100 : 0;
       const tipPercent = receiptData.subtotal ? (receiptData.tip / receiptData.subtotal) * 100 : 0;
