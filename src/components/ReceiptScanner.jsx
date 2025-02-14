@@ -129,16 +129,6 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
       const taxPercent = receiptData.subtotal ? (receiptData.tax / receiptData.subtotal) * 100 : 0;
       const tipPercent = receiptData.subtotal ? (receiptData.tip / receiptData.subtotal) * 100 : 0;
 
-      console.log('Scanned Receipt Data:', {
-        items: receiptData.items,
-        tax: taxPercent,
-        tip: tipPercent,
-        subtotal: receiptData.subtotal,
-        taxAmount: receiptData.tax,
-        tipAmount: receiptData.tip,
-        total: receiptData.total
-      });
-
       onScanComplete({
         items: receiptData.items,
         tax: taxPercent,
@@ -167,22 +157,17 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
       {hasScannedReceipt ? (
         <Box w="100%" p={4} bg="green.50" borderRadius="md">
           <VStack spacing={3}>
-            <Text color="green.600">
-              <CheckIcon mr={2} />
-              Receipt scanned successfully!
-            </Text>
+            <Text color="green.600">Receipt scanned successfully!</Text>
             <HStack spacing={4}>
               <Button
                 colorScheme="blue"
                 onClick={() => onScanComplete(existingItems)}
-                rightIcon={<ArrowForwardIcon />}
               >
                 Continue with Receipt
               </Button>
               <Button
                 variant="outline"
                 onClick={resetState}
-                leftIcon={<RepeatIcon />}
               >
                 Scan Different Receipt
               </Button>
@@ -212,10 +197,9 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
             >
               <input {...getInputProps()} />
               <VStack spacing={3}>
-                <AttachmentIcon 
-                  boxSize={8} 
-                  color="blue.500"
-                />
+                <Box fontSize="2xl" color="blue.500" mb={2}>
+                  ��
+                </Box>
                 <Text fontWeight="medium" color="blue.600">
                   Drop your receipt here
                 </Text>
@@ -235,7 +219,6 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
                   isLoading={isScanning}
                   loadingText="Scanning..."
                   colorScheme="blue"
-                  leftIcon={<CheckIcon />}
                 >
                   Scan Receipt
                 </Button>
@@ -244,7 +227,6 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
                     setImage(null);
                   }}
                   variant="outline"
-                  leftIcon={<RepeatIcon />}
                 >
                   Choose Different Image
                 </Button>
