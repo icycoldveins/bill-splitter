@@ -18,8 +18,9 @@ import {
   Stack,
   Select,
   useToast,
+  Input,
 } from '@chakra-ui/react';
-import { ArrowForwardIcon } from '@chakra-ui/icons';
+import { ArrowForwardIcon, DeleteIcon, AddIcon } from '@chakra-ui/icons';
 
 function ItemSelector({ items, onItemsSelected, people }) {
   const [itemAssignments, setItemAssignments] = useState({});
@@ -30,7 +31,9 @@ function ItemSelector({ items, onItemsSelected, people }) {
   const [paidBy, setPaidBy] = useState('');
   const toast = useToast();
   
-  const subtotal = items.items.reduce((sum, item) => sum + item.price, 0);
+  const [editableItems, setEditableItems] = useState(items.items.map(item => ({...item})));
+  
+  const subtotal = editableItems.reduce((sum, item) => sum + item.price, 0);
   
   // Calculate tax amount based on type
   const taxAmount = taxType === 'percentage' 
@@ -82,9 +85,53 @@ function ItemSelector({ items, onItemsSelected, people }) {
     setTip(numValue);
   };
 
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...editableItems];
+    if (field === 'price') {
+      // Convert price to number and handle invalid input
+      const numValue = value === '' || isNaN(value) ? 0 : parseFloat(value);
+      newItems[index] = { ...newItems[index], [field]: numValue };
+    } else {
+      newItems[index] = { ...newItems[index], [field]: value };
+    }
+    setEditableItems(newItems);
+  };
+
+  const handleDeleteItem = (index) => {
+    const newItems = editableItems.filter((_, i) => i !== index);
+    setEditableItems(newItems);
+    
+    // Remove the assignment for this item
+    const newAssignments = { ...itemAssignments };
+    delete newAssignments[index];
+    
+    // Adjust the assignments indices for items after the deleted one
+    const adjustedAssignments = {};
+    Object.entries(newAssignments).forEach(([key, value]) => {
+      const keyNum = parseInt(key);
+      if (keyNum > index) {
+        adjustedAssignments[keyNum - 1] = value;
+      } else {
+        adjustedAssignments[key] = value;
+      }
+    });
+    
+    setItemAssignments(adjustedAssignments);
+  };
+
+  const handleAddItem = () => {
+    setEditableItems([
+      ...editableItems,
+      {
+        name: '',
+        price: 0
+      }
+    ]);
+  };
+
   const handleSubmit = () => {
     // Check if all items are assigned
-    const unassignedItems = items.items.filter((_, index) => 
+    const unassignedItems = editableItems.filter((_, index) => 
       !itemAssignments.hasOwnProperty(index)
     );
 
@@ -111,7 +158,7 @@ function ItemSelector({ items, onItemsSelected, people }) {
     }
 
     onItemsSelected({
-      items: items.items,
+      items: editableItems,
       itemAssignments,
       tax: taxAmount,
       tip: tipAmount,
@@ -142,17 +189,36 @@ function ItemSelector({ items, onItemsSelected, people }) {
       {/* Items Section */}
       <Box p={4} bg="gray.50" borderRadius="md">
         <Text mb={3} fontWeight="bold">Assign Items</Text>
-        {items.items.map((item, index) => (
+        {editableItems.map((item, index) => (
           <HStack key={index} justify="space-between" p={2} bg="white" mb={2} borderRadius="md">
-            <VStack align="start" flex={1}>
-              <Text>{item.name}</Text>
-              <Text fontSize="sm" color="gray.600">${item.price.toFixed(2)}</Text>
+            <VStack align="start" flex={1} spacing={2}>
+              <Input
+                value={item.name}
+                onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                size="sm"
+                placeholder="Item name"
+              />
+              <NumberInput
+                value={item.price}
+                onChange={(_, value) => handleItemChange(index, 'price', value)}
+                min={0}
+                precision={2}
+                size="sm"
+                w="120px"
+              >
+                <NumberInputField placeholder="Price" />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
             </VStack>
             <Select
               w="150px"
               value={itemAssignments[index] || ''}
               onChange={(e) => assignItemToPerson(index, e.target.value)}
               placeholder="Assign to"
+              size="sm"
             >
               {people.map((person, idx) => (
                 <option key={idx} value={idx}>
@@ -160,8 +226,28 @@ function ItemSelector({ items, onItemsSelected, people }) {
                 </option>
               ))}
             </Select>
+            <Button
+              size="sm"
+              variant="ghost"
+              colorScheme="red"
+              onClick={() => handleDeleteItem(index)}
+              aria-label="Delete item"
+            >
+              <DeleteIcon />
+            </Button>
           </HStack>
         ))}
+        
+        <Button
+          onClick={handleAddItem}
+          size="sm"
+          leftIcon={<AddIcon />}
+          mt={3}
+          colorScheme="blue"
+          variant="outline"
+        >
+          Add Item
+        </Button>
       </Box>
 
       {/* Tax Section */}
