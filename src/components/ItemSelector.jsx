@@ -21,6 +21,7 @@ import {
   Input,
 } from '@chakra-ui/react';
 import { ArrowForwardIcon, DeleteIcon, AddIcon } from '@chakra-ui/icons';
+import { createWorker } from 'tesseract.js';
 
 function ItemSelector({ items, onItemsSelected, people }) {
   const [itemAssignments, setItemAssignments] = useState({});
@@ -164,6 +165,82 @@ function ItemSelector({ items, onItemsSelected, people }) {
       tip: tipAmount,
       paidBy
     });
+  };
+
+  const preprocessImage = async (imageUrl) => {
+    // Create canvas and load image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    await new Promise((resolve) => {
+      img.onload = resolve;
+      img.src = imageUrl;
+    });
+    
+    // Set canvas size to match image
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    // Draw original image
+    ctx.drawImage(img, 0, 0);
+    
+    // Get image data
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Convert to grayscale
+    for (let i = 0; i < data.length; i += 4) {
+      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      data[i] = avg;     // R
+      data[i + 1] = avg; // G
+      data[i + 2] = avg; // B
+    }
+    
+    // Apply thresholding
+    const threshold = 128;
+    for (let i = 0; i < data.length; i += 4) {
+      const value = data[i] > threshold ? 255 : 0;
+      data[i] = value;     // R
+      data[i + 1] = value; // G
+      data[i + 2] = value; // B
+    }
+    
+    // Put processed image back on canvas
+    ctx.putImageData(imageData, 0, 0);
+    
+    // Return processed image as data URL
+    return canvas.toDataURL();
+  };
+
+  const scanReceipt = async () => {
+    if (!image) return;
+    
+    setIsScanning(true);
+    const worker = await createWorker();
+    
+    try {
+      // Preprocess the image
+      const processedImage = await preprocessImage(image);
+      
+      await worker.loadLanguage('eng');
+      await worker.initialize('eng');
+      
+      // Use processed image for OCR
+      const { data: { text } } = await worker.recognize(processedImage);
+      
+      // Rest of your existing OCR logic...
+    } catch (error) {
+      toast({
+        title: 'Error scanning receipt',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    } finally {
+      await worker.terminate();
+      setIsScanning(false);
+    }
   };
 
   return (
