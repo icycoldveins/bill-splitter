@@ -22,11 +22,33 @@ function ReceiptScanner({ onScanComplete, hasScannedReceipt, existingItems, onRe
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png']
+      'image/*': ['.jpeg', '.jpg', '.png', '.heic', '.HEIC'],
     },
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0];
-      setImage(URL.createObjectURL(file));
+      
+      // Check if file is HEIC format
+      if (file.name.toLowerCase().endsWith('.heic')) {
+        try {
+          // Convert HEIC to JPEG using heic2any
+          const heic2any = await import('heic2any');
+          const convertedBlob = await heic2any.default({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.8
+          });
+          setImage(URL.createObjectURL(convertedBlob));
+        } catch (error) {
+          toast({
+            title: 'Error converting HEIC image',
+            description: 'Could not convert the HEIC image to JPEG',
+            status: 'error',
+            duration: 3000,
+          });
+        }
+      } else {
+        setImage(URL.createObjectURL(file));
+      }
     }
   });
 
